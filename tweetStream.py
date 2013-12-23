@@ -24,19 +24,27 @@ def readProperties(pFile):
 
 class StdOutListener(StreamListener):
     def on_data(self, data):
-        global fileName,size
+        global fileName, start, start_create_at
+        lang = ""
+        create_at = ""
         if data.startswith("{"):
             try:
                 f = codecs.open(fileName,"a","utf-8")
                 tweet = simplejson.loads(data + "\n","utf-8")
-                if tweet["lang"] == "ja" and (tweet.has_key("lang")):
-                    if size == 2:
+                lang = self.checkKeys("lang", tweet)
+
+                if lang == "ja":
+                    if start == 0:
                         simplejson.dump(tweet,f,indent=4,ensure_ascii=False)
-                        size = 0
+                        start_create_at = self.checkKeys("created_at", tweet)
+                        start = 1
                     else:
                         f.write(',')
+                        create_at = self.checkKeys("created_at", tweet)
                         simplejson.dump(tweet,f,indent=4,ensure_ascii=False)
-            except Exception,e:
+                        if create_at[14:16] != start_create_at[14:16]:
+                            sys.exit()
+            except IOError,e:
                 print e.message
             finally:
                 f.close()
@@ -46,8 +54,14 @@ class StdOutListener(StreamListener):
         print "on_error"
         print status
 
+    def checkKeys(self, key, tweet):
+        if tweet.has_key(key):
+            return tweet[key]
+        else:
+            return ""
+
 if __name__ == '__main__':
-    size = os.path.getsize(fileName)
+    start = 0
     properties = readProperties(pFile)
     sol = StdOutListener()
     auth = OAuthHandler(
