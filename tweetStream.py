@@ -9,6 +9,7 @@ import os.path
 import codecs
 import simplejson
 import ConfigParser
+import re
 
 argv = sys.argv
 pFile = argv[1]
@@ -25,6 +26,7 @@ def readProperties(pFile):
 class StdOutListener(StreamListener):
     def on_data(self, data):
         global fileName, start, start_create_at
+        size = os.path.getsize(fileName)
         lang = ""
         create_at = ""
         if data.startswith("{"):
@@ -32,7 +34,6 @@ class StdOutListener(StreamListener):
                 f = codecs.open(fileName,"a","utf-8")
                 tweet = simplejson.loads(data + "\n","utf-8")
                 lang = self.checkKeys("lang", tweet)
-
                 if lang == "ja":
                     if start == 0:
                         simplejson.dump(tweet,f,indent=4,ensure_ascii=False)
@@ -42,7 +43,9 @@ class StdOutListener(StreamListener):
                         f.write(',')
                         create_at = self.checkKeys("created_at", tweet)
                         simplejson.dump(tweet,f,indent=4,ensure_ascii=False)
-                        if create_at[14:16] != start_create_at[14:16]:
+                        if size > 1200000:
+                            print "System End"
+                            print size
                             sys.exit()
             except IOError,e:
                 print e.message
